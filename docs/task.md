@@ -1,0 +1,11 @@
+# Task List for Apple Foundation Model CLI
+
+- [x] Research & Planning
+    - [x] Research GenerationOptions API (temperature, sampling)
+    - [x] Update Implementation Plan
+- [/] Implementation
+    - [x] Add CLI arguments for temperature and sampling
+    - [x] Integrate GenerationOptions into SystemLanguageModel call
+- [x] Verification
+    - [x] Verify temperature argument effect
+    - [x] Verify sampling argument effect

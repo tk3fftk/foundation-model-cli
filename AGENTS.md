@@ -1,0 +1,2 @@
+- ユーザーへの返答は日本語で実施してください。
+- Always update `/docs` with your planning files (implementation_plan.md, task.md, walkthrough.md).
