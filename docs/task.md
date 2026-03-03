@@ -9,3 +9,5 @@
 - [x] Verification
     - [x] Verify temperature argument effect
     - [x] Verify sampling argument effect
+- [x] CI
+    - [x] Add GitHub Actions workflow for Swift lint and build
