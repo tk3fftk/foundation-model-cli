@@ -1,7 +1,8 @@
 # Walkthrough - OpenAI API互換エンドポイント追加
 
 ## 追加した内容
-- `fm --openai-compatible-api-endpoint host:port` を追加。
+- `fm --openai-compatible-api-endpoint`（short: `-o`）を追加。
+- 値を省略すると `localhost` の空きポートを `4000` から自動選択。
 - 指定時は通常の単発生成の代わりにHTTPサーバーを起動。
 - OpenAI互換の最小APIとして以下を実装:
   - `GET /v1/models`

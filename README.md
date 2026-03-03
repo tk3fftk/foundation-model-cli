@@ -46,7 +46,7 @@ fm "Why is the sky blue?"
 | `--temperature` | `-t` | Controls randomness (0.0 to 1.0). | `0.0` (Deterministic) |
 | `--sampling` | `-m` | Sampling strategy: `greedy` or `sampling`. | `greedy` |
 | `--debug` | | Enable verbose logging. | `false` |
-| `--openai-compatible-api-endpoint` | | OpenAI API互換エンドポイントを `host:port` で起動。 | (disabled) |
+| `--openai-compatible-api-endpoint` | `-o` | OpenAI API互換エンドポイントを起動（`host:port` 指定、または値省略で `localhost` の空きポートを `4000` から自動選択）。 | (disabled) |
 | `--version` | | Show the version. | |
 
 ### Examples
@@ -74,6 +74,11 @@ fm -t 0.0 -m greedy "What is the capital of France?"
 **OpenAI API互換エンドポイントを起動:**
 ```bash
 fm --openai-compatible-api-endpoint 127.0.0.1:4000
+```
+
+**OpenAI API互換エンドポイントを自動ポートで起動:**
+```bash
+fm -o
 ```
 
 ```bash

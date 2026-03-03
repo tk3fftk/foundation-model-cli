@@ -5,7 +5,9 @@
 - 既存の単発CLI応答モードは維持する。
 
 ## 最小変更方針
-1. `main.swift` に `--openai-compatible-api-endpoint host:port` オプションを追加。
+1. `main.swift` に `--openai-compatible-api-endpoint`（short: `-o`）を追加。
+   - 値あり: `host:port` で起動
+   - 値なし: `localhost` の空きポートを `4000` から探索して起動
 2. このオプション指定時のみ簡易HTTPサーバーを起動。
 3. 互換対象は最小限として以下を提供:
    - `GET /v1/models`

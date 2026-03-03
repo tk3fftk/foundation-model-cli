@@ -32,15 +32,32 @@ struct FoundationModelCLI: AsyncParsableCommand {
     @Flag(name: .long, help: "Enable verbose logging.")
     var debug: Bool = false
     
-    @Option(name: .customLong("openai-compatible-api-endpoint"), help: "Launch OpenAI-compatible API endpoint at host:port (example: 127.0.0.1:4000).")
-    var openAICompatibleAPIEndpoint: String?
+    @Option(
+        name: [.customShort("o"), .customLong("openai-compatible-api-endpoint")],
+        parsing: .upToNextOption,
+        help: "Launch OpenAI-compatible API endpoint. Use host:port, or omit value to auto-select localhost port from 4000."
+    )
+    var openAICompatibleAPIEndpoint: [String] = []
 
     mutating func run() async throws {
         var localStandardError = StandardError()
         
-        if let endpoint = openAICompatibleAPIEndpoint {
+        // parsing: .upToNextOption uses an array and cannot distinguish
+        // "option not provided" from "option provided without value" by itself.
+        let hasOpenAICompatibleAPIEndpointOption =
+            CommandLine.arguments.contains("-o") ||
+            CommandLine.arguments.contains(where: { $0.hasPrefix("--openai-compatible-api-endpoint") })
+        if hasOpenAICompatibleAPIEndpointOption {
             do {
-                try runOpenAICompatibleAPIServer(endpoint: endpoint)
+                if openAICompatibleAPIEndpoint.count > 1 {
+                    throw ValidationError("Only one endpoint value is supported for --openai-compatible-api-endpoint.")
+                }
+                
+                if let endpoint = openAICompatibleAPIEndpoint.first {
+                    try runOpenAICompatibleAPIServer(endpoint: endpoint)
+                } else {
+                    try runOpenAICompatibleAPIServerWithAutoPort(startingAt: 4000)
+                }
             } catch {
                 print("Error: \(error.localizedDescription)", to: &localStandardError)
                 throw ExitCode.failure
@@ -108,19 +125,34 @@ struct FoundationModelCLI: AsyncParsableCommand {
     }
     
     #if canImport(Network)
+    private func runOpenAICompatibleAPIServerWithAutoPort(startingAt startPort: UInt16) throws {
+        var lastError: Error?
+        for currentPort in Int(startPort)...Int(UInt16.max) {
+            do {
+                try runOpenAICompatibleAPIServer(endpoint: "127.0.0.1:\(currentPort)")
+                return
+            } catch {
+                lastError = error
+            }
+        }
+        throw ValidationError("No available localhost port found from \(startPort). Last error: \(lastError?.localizedDescription ?? "unknown")")
+    }
+    
     private func runOpenAICompatibleAPIServer(endpoint: String) throws {
         guard let (host, port) = parseHostAndPort(from: endpoint) else {
             throw ValidationError("Invalid --openai-compatible-api-endpoint value. Use host:port (example: 127.0.0.1:4000).")
         }
         
-        let listener = try NWListener(using: .tcp, on: port)
+        let parameters = NWParameters.tcp
+        parameters.requiredLocalEndpoint = .hostPort(host: NWEndpoint.Host(host), port: port)
+        let listener = try NWListener(using: parameters)
         let queue = DispatchQueue(label: "fm.openai-compatible-api")
         listener.newConnectionHandler = { connection in
             connection.start(queue: queue)
             self.handleOpenAICompatibleConnection(connection)
         }
         listener.start(queue: queue)
-        print("OpenAI-compatible API endpoint started on all interfaces at port \(port.rawValue) (requested: \(host):\(port.rawValue))")
+        print("OpenAI-compatible API endpoint started at http://\(host):\(port.rawValue)")
         dispatchMain()
     }
     
