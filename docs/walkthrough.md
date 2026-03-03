@@ -74,7 +74,7 @@ echo "What is the capital of France?" | .build/release/fm
 - **Troubleshooting**: If you see `assetsUnavailable` error, ensure Apple Intelligence processing is finished on your device.
 
 ## CI
-- Added GitHub Actions workflow: `/home/runner/work/foundation-model-cli/foundation-model-cli/.github/workflows/swift-ci.yml`
+- Added GitHub Actions workflow: `.github/workflows/swift-ci.yml`
 - The workflow executes on `push` (main) and `pull_request`.
 - It runs:
   - `swiftlint lint`
