@@ -46,6 +46,7 @@ fm "Why is the sky blue?"
 | `--temperature` | `-t` | Controls randomness (0.0 to 1.0). | `0.0` (Deterministic) |
 | `--sampling` | `-m` | Sampling strategy: `greedy` or `sampling`. | `greedy` |
 | `--debug` | | Enable verbose logging. | `false` |
+| `--openai-compatible-api-endpoint` | | OpenAI API互換エンドポイントを `host:port` で起動。 | (disabled) |
 | `--version` | | Show the version. | |
 
 ### Examples
@@ -68,6 +69,20 @@ fm -t 1.0 -m sampling "Brainstorm catchy names for a coffee shop."
 **Deterministic Output:**
 ```bash
 fm -t 0.0 -m greedy "What is the capital of France?"
+```
+
+**OpenAI API互換エンドポイントを起動:**
+```bash
+fm --openai-compatible-api-endpoint 127.0.0.1:4000
+```
+
+```bash
+curl -s http://127.0.0.1:4000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"foundation-model-cli",
+    "messages":[{"role":"user","content":"こんにちは"}]
+  }'
 ```
 
 ## License

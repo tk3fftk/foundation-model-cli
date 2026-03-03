@@ -1,11 +1,9 @@
-# Task List for Apple Foundation Model CLI
+# Task List - OpenAI API互換エンドポイント
 
-- [x] Research & Planning
-    - [x] Research GenerationOptions API (temperature, sampling)
-    - [x] Update Implementation Plan
-- [/] Implementation
-    - [x] Add CLI arguments for temperature and sampling
-    - [x] Integrate GenerationOptions into SystemLanguageModel call
-- [x] Verification
-    - [x] Verify temperature argument effect
-    - [x] Verify sampling argument effect
+- [x] 既存コードとREADMEを確認
+- [x] 初期ビルド/テストで現状確認（環境依存エラー把握）
+- [x] `--openai-compatible-api-endpoint` オプション追加
+- [x] `/v1/models` と `/v1/chat/completions` の最小実装追加
+- [x] 既存CLI生成ロジックの共通化（通常モード互換維持）
+- [x] README利用例の更新
+- [ ] macOS実機でのAPI疎通最終確認
