@@ -13,13 +13,6 @@ This plan outlines the steps to create a Command Line Interface (CLI) that utili
 ### Project Structure
 We will create a specific Swift Package Executable.
 
-### CI (GitHub Actions)
-- Add `.github/workflows/swift-ci.yml`.
-- Run on `push` to `main` and `pull_request`.
-- Use `macos-15` runner, install `swiftlint`, then run:
-  - `swiftlint lint`
-  - `swift build -c release`
-
 #### [NEW] Package.swift
 - Define the package name `foundation-model-cli`.
 - Add `swift-argument-parser` as a dependency.
@@ -41,6 +34,13 @@ We will create a specific Swift Package Executable.
   - Create a session with the system prompt (`instructions`).
   - Generate response for the input prompt.
   - Print the result to stdout.
+
+## CI (GitHub Actions)
+- Add `.github/workflows/swift-ci.yml`.
+- Run on `push` to `main` and `pull_request`.
+- Use `macos-15` runner, install `swiftlint`, then run:
+  - `swiftlint lint`
+  - `swift build -c release`
 
 ## Verification Plan
 
