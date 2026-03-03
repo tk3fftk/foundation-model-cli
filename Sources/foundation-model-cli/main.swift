@@ -8,7 +8,8 @@ import Network
 @main
 @available(macOS 26.0, *)
 struct FoundationModelCLI: AsyncParsableCommand {
-    private let maxRequestBodySize = 1_048_576
+    private static let maxRequestBodySize = 1_048_576
+    private static let maxHTTPRequestSize = maxRequestBodySize + 16_384
     
     static let configuration = CommandConfiguration(
         commandName: "fm",
@@ -119,7 +120,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
             self.handleOpenAICompatibleConnection(connection)
         }
         listener.start(queue: queue)
-        print("OpenAI-compatible API endpoint started on 0.0.0.0:\(port.rawValue) (requested: \(host):\(port.rawValue))")
+        print("OpenAI-compatible API endpoint started on all interfaces at port \(port.rawValue) (requested: \(host):\(port.rawValue))")
         dispatchMain()
     }
     
@@ -132,7 +133,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
     }
     
     private func handleOpenAICompatibleConnection(_ connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: maxRequestBodySize) { data, _, _, _ in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: Self.maxHTTPRequestSize) { data, _, _, _ in
             guard let data else {
                 connection.cancel()
                 return
@@ -153,7 +154,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
             return httpResponse(statusCode: 400, statusText: "Bad Request", body: OpenAIErrorPayload(error: .init(message: "Malformed HTTP request.", type: "invalid_request_error")))
         }
         
-        if let contentLength = requestParts.headers["content-length"], let bodySize = Int(contentLength), bodySize > maxRequestBodySize {
+        if let contentLength = requestParts.headers["content-length"], let bodySize = Int(contentLength), bodySize > Self.maxRequestBodySize {
             return httpResponse(statusCode: 413, statusText: "Payload Too Large", body: OpenAIErrorPayload(error: .init(message: "Request body is too large (max 1MB).", type: "invalid_request_error")))
         }
         
