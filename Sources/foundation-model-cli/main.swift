@@ -8,6 +8,8 @@ import Network
 @main
 @available(macOS 26.0, *)
 struct FoundationModelCLI: AsyncParsableCommand {
+    private let maxRequestBodySize = 1_048_576
+    
     static let configuration = CommandConfiguration(
         commandName: "fm",
         abstract: "A CLI tool to interact with Apple's Foundation Models.",
@@ -113,11 +115,11 @@ struct FoundationModelCLI: AsyncParsableCommand {
         let listener = try NWListener(using: .tcp, on: port)
         let queue = DispatchQueue(label: "fm.openai-compatible-api")
         listener.newConnectionHandler = { connection in
-            self.handleOpenAICompatibleConnection(connection)
             connection.start(queue: queue)
+            self.handleOpenAICompatibleConnection(connection)
         }
         listener.start(queue: queue)
-        print("OpenAI-compatible API endpoint started at http://\(host):\(port.rawValue)")
+        print("OpenAI-compatible API endpoint started on 0.0.0.0:\(port.rawValue) (requested: \(host):\(port.rawValue))")
         dispatchMain()
     }
     
@@ -130,7 +132,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
     }
     
     private func handleOpenAICompatibleConnection(_ connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 1_048_576) { data, _, _, _ in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: maxRequestBodySize) { data, _, _, _ in
             guard let data else {
                 connection.cancel()
                 return
@@ -149,6 +151,10 @@ struct FoundationModelCLI: AsyncParsableCommand {
         guard let request = String(data: data, encoding: .utf8),
               let requestParts = splitHTTPRequest(request) else {
             return httpResponse(statusCode: 400, statusText: "Bad Request", body: OpenAIErrorPayload(error: .init(message: "Malformed HTTP request.", type: "invalid_request_error")))
+        }
+        
+        if let contentLength = requestParts.headers["content-length"], let bodySize = Int(contentLength), bodySize > maxRequestBodySize {
+            return httpResponse(statusCode: 413, statusText: "Payload Too Large", body: OpenAIErrorPayload(error: .init(message: "Request body is too large (max 1MB).", type: "invalid_request_error")))
         }
         
         let lineParts = requestParts.requestLine.split(separator: " ")
@@ -211,15 +217,25 @@ struct FoundationModelCLI: AsyncParsableCommand {
         }
     }
     
-    private func splitHTTPRequest(_ request: String) -> (requestLine: String, body: String)? {
+    private func splitHTTPRequest(_ request: String) -> (requestLine: String, headers: [String: String], body: String)? {
         let separator = "\r\n\r\n"
         guard let range = request.range(of: separator) else { return nil }
         let headerSection = request[..<range.lowerBound]
         let bodySection = request[range.upperBound...]
-        guard let firstHeaderLine = headerSection.split(separator: "\r\n", omittingEmptySubsequences: false).first else {
+        let lines = headerSection.split(separator: "\r\n", omittingEmptySubsequences: false).map(String.init)
+        guard let firstHeaderLine = lines.first else {
             return nil
         }
-        return (String(firstHeaderLine), String(bodySection))
+        
+        var headers: [String: String] = [:]
+        for line in lines.dropFirst() {
+            guard let separatorIndex = line.firstIndex(of: ":") else { continue }
+            let key = line[..<separatorIndex].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let value = line[line.index(after: separatorIndex)...].trimmingCharacters(in: .whitespacesAndNewlines)
+            headers[key] = value
+        }
+        
+        return (String(firstHeaderLine), headers, String(bodySection))
     }
     
     private func httpResponse<T: Encodable>(statusCode: Int, statusText: String, body: T) -> Data {
