@@ -75,7 +75,7 @@ echo "What is the capital of France?" | .build/release/fm
 ```bash
 .build/release/fm -o
 ```
-*Expected Output*: `OpenAI-compatible endpoint listening on http://127.0.0.1:<port>/v1/chat/completions`
+*期待される出力*: `OpenAI-compatible endpoint listening on http://127.0.0.1:<port>/v1/chat/completions`
 
 ## Notes
 - **Requirements**: macOS 15+ (Sequoia) / macOS 26.0 (Future beta) with Apple Intelligence enabled.

@@ -215,6 +215,7 @@ func isPortAvailable(_ port: Int) -> Bool {
 
 #if canImport(Network)
 struct OpenAICompatibleServer {
+    private let maxHTTPRequestSizeBytes = 1_048_576
     let port: Int
     let defaultSystemPrompt: String
     let debug: Bool
@@ -227,7 +228,14 @@ struct OpenAICompatibleServer {
         let listener = try NWListener(using: .tcp, on: nwPort)
         listener.newConnectionHandler = { connection in
             connection.start(queue: .global())
-            connection.receive(minimumIncompleteLength: 1, maximumLength: 1_048_576) { data, _, _, _ in
+            connection.receive(
+                minimumIncompleteLength: 1,
+                maximumLength: maxHTTPRequestSizeBytes
+            ) { data, _, isComplete, receiveError in
+                guard receiveError == nil, isComplete else {
+                    connection.cancel()
+                    return
+                }
                 Task {
                     await handle(connection: connection, data: data)
                 }
@@ -289,7 +297,7 @@ struct OpenAICompatibleServer {
                 inputPrompt: userPrompt,
                 systemPrompt: systemPrompt,
                 temperature: completionRequest.temperature ?? 0.0,
-                sampling: .sampling,
+                sampling: (completionRequest.temperature ?? 0.0) <= 0 ? .greedy : .sampling,
                 debug: debug
             )
 
@@ -315,13 +323,25 @@ struct OpenAICompatibleServer {
             send(
                 connection: connection,
                 statusCode: 500,
-                body: #"{"error":"\#(error.localizedDescription.replacingOccurrences(of: "\"", with: "'"))"}"#
+                body: encodeErrorBody(error.localizedDescription)
             )
         }
     }
 
     private func send(connection: NWConnection, statusCode: Int, body: String) {
-        let statusText = statusCode == 200 ? "OK" : "Error"
+        let statusText: String
+        switch statusCode {
+        case 200:
+            statusText = "OK"
+        case 400:
+            statusText = "Bad Request"
+        case 404:
+            statusText = "Not Found"
+        case 500:
+            statusText = "Internal Server Error"
+        default:
+            statusText = "Error"
+        }
         let response = """
         HTTP/1.1 \(statusCode) \(statusText)\r
         Content-Type: application/json\r
@@ -334,6 +354,17 @@ struct OpenAICompatibleServer {
         connection.send(content: data, completion: .contentProcessed { _ in
             connection.cancel()
         })
+    }
+
+    private func encodeErrorBody(_ message: String) -> String {
+        let payload = OpenAIErrorResponse(error: message)
+        guard
+            let data = try? JSONEncoder().encode(payload),
+            let text = String(data: data, encoding: .utf8)
+        else {
+            return #"{"error":"Internal error"}"#
+        }
+        return text
     }
 }
 #else
@@ -378,6 +409,10 @@ struct OpenAIChatChoice: Encodable {
         case message
         case finishReason = "finish_reason"
     }
+}
+
+struct OpenAIErrorResponse: Encodable {
+    let error: String
 }
 
 struct StandardError: TextOutputStream {
