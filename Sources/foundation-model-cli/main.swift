@@ -226,6 +226,7 @@ struct OpenAICompatibleServer {
     let defaultSystemPrompt: String
     let debug: Bool
 
+    @MainActor
     func start() async throws {
         guard let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
             throw FoundationModelCLIError.invalidPort(port)
@@ -247,10 +248,10 @@ struct OpenAICompatibleServer {
                 }
             }
         }
-        listener.start(queue: .global())
+        listener.start(queue: .main)
 
         print("OpenAI-compatible endpoint listening on http://127.0.0.1:\(port)/v1/chat/completions")
-        dispatchMain()
+        RunLoop.main.run()
     }
 
     private func handle(connection: NWConnection, data: Data?) async {
@@ -379,6 +380,7 @@ struct OpenAICompatibleServer {
     let defaultSystemPrompt: String
     let debug: Bool
 
+    @MainActor
     func start() async throws {
         throw FoundationModelCLIError.networkFrameworkUnavailable
     }

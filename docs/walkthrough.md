@@ -80,6 +80,7 @@ echo "What is the capital of France?" | .build/release/fm
 ## Notes
 - **Requirements**: macOS 15+ (Sequoia) / macOS 26.0 (Future beta) with Apple Intelligence enabled.
 - **Troubleshooting**: If you see `assetsUnavailable` error, ensure Apple Intelligence processing is finished on your device.
+- **OpenAI APIモード安定化**: サーバーはメインキューでリッスンし、`RunLoop.main.run()` でブロックするため、`dispatchMain` 呼び出しによる `SIGTRAP` を回避しています。
 
 ## CI
 - Added GitHub Actions workflow: `.github/workflows/swift-ci.yml`
