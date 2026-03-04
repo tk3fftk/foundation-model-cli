@@ -45,6 +45,8 @@ fm "Why is the sky blue?"
 | `--system-prompt` | `-s` | Custom instructions for the model. | (empty) |
 | `--temperature` | `-t` | Controls randomness (0.0 to 1.0). | `0.0` (Deterministic) |
 | `--sampling` | `-m` | Sampling strategy: `greedy` or `sampling`. | `greedy` |
+| `--openai-api` | `-o` | OpenAI API互換エンドポイントを起動。`--openai-api-port`未指定時は`localhost:4000`から空きポートを自動選択。 | `false` |
+| `--openai-api-port` | `-p` | OpenAI API互換エンドポイントのポート番号。 | (auto) |
 | `--debug` | | Enable verbose logging. | `false` |
 | `--version` | | Show the version. | |
 
@@ -68,6 +70,12 @@ fm -t 1.0 -m sampling "Brainstorm catchy names for a coffee shop."
 **Deterministic Output:**
 ```bash
 fm -t 0.0 -m greedy "What is the capital of France?"
+```
+
+**OpenAI API互換エンドポイント起動 (ポート自動選択):**
+```bash
+fm -o
+# 例: OpenAI-compatible endpoint listening on http://127.0.0.1:4000/v1/chat/completions
 ```
 
 ## License

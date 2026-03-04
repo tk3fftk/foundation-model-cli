@@ -7,6 +7,8 @@ We have successfully implemented `fm`, a CLI tool that interfaces with Apple's F
 - **System Prompt**: precise control over model instructions via `--system-prompt` or `-s`. Default is empty.
 - **Temperature Control**: Adjust creativity via `--temperature` or `-t` (0.0 to 1.0). Default is 0.0 (deterministic).
 - **Sampling Strategy**: Choose between deterministic (`greedy`) or randomized (`sampling`) via `--sampling` or `-m`. Default is `greedy`.
+- **OpenAI API互換エンドポイント**: `--openai-api` / `-o` で `POST /v1/chat/completions` を提供。
+- **動的ポート選択**: `--openai-api` 単独指定時は `localhost:4000` から空きポートを自動選択。`--openai-api-port` / `-p` で明示指定も可能。
 - **Debug Mode**: Verbose logging with `--debug`.
 - **Standard Options**: `--help` and `--version`.
 
@@ -68,6 +70,12 @@ echo "What is the capital of France?" | .build/release/fm
 .build/release/fm --version
 ```
 *Result*: Displays usage information and version `0.1.0`.
+
+#### 7. OpenAI API互換エンドポイント
+```bash
+.build/release/fm -o
+```
+*Expected Output*: `OpenAI-compatible endpoint listening on http://127.0.0.1:<port>/v1/chat/completions`
 
 ## Notes
 - **Requirements**: macOS 15+ (Sequoia) / macOS 26.0 (Future beta) with Apple Intelligence enabled.

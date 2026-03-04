@@ -1,6 +1,17 @@
 import Foundation
 import ArgumentParser
+import Dispatch
+#if canImport(Network)
+import Network
+#endif
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 @main
 @available(macOS 26.0, *)
@@ -26,8 +37,31 @@ struct FoundationModelCLI: AsyncParsableCommand {
     @Flag(name: .long, help: "Enable verbose logging.")
     var debug: Bool = false
 
+    @Flag(
+        name: [.customShort("o"), .customLong("openai-api")],
+        help: "Start an OpenAI-compatible API endpoint on localhost."
+    )
+    var openAIAPI: Bool = false
+
+    @Option(
+        name: [.customLong("openai-api-port"), .customShort("p")],
+        help: "Port for the OpenAI-compatible API endpoint."
+    )
+    var openAIAPIPort: Int?
+
     mutating func run() async throws {
         var localStandardError = StandardError()
+        if openAIAPI {
+            let serverPort = try findAvailablePort(preferredPort: openAIAPIPort, startPort: 4000)
+            let server = OpenAICompatibleServer(
+                port: serverPort,
+                defaultSystemPrompt: systemPrompt,
+                debug: debug
+            )
+            try await server.start()
+            return
+        }
+
         let inputPrompt: String
         if let promptArgument = prompt {
             inputPrompt = promptArgument
@@ -49,32 +83,14 @@ struct FoundationModelCLI: AsyncParsableCommand {
         }
 
         do {
-            let model = SystemLanguageModel.default
-
-            if debug {
-                print("Debug: Creating session...")
-            }
-
-            let session = LanguageModelSession(model: model, instructions: systemPrompt)
-
-            if debug {
-                print("Debug: Generating response...")
-            }
-
-            // Map CLI sampling argument to API SamplingMode
-            // Note: Using a top-p threshold of 1.0 for 'sampling' to mimic standard sampling behavior.
-            let samplingMode: GenerationOptions.SamplingMode = sampling == .greedy
-                ? .greedy
-                : .random(probabilityThreshold: 1.0, seed: nil)
-
-            let options = GenerationOptions(
-                sampling: samplingMode,
-                temperature: temperature
+            let responseText = try await generateResponse(
+                inputPrompt: inputPrompt,
+                systemPrompt: systemPrompt,
+                temperature: temperature,
+                sampling: sampling,
+                debug: debug
             )
-
-            let response = try await session.respond(to: inputPrompt, options: options)
-            print(response.content)
-
+            print(responseText)
         } catch {
             print("Error: \(error.localizedDescription)", to: &localStandardError)
             if debug {
@@ -97,6 +113,271 @@ struct FoundationModelCLI: AsyncParsableCommand {
 enum SamplingStrategy: String, ExpressibleByArgument {
     case greedy
     case sampling
+}
+
+enum FoundationModelCLIError: LocalizedError {
+    case foundationModelsUnavailable
+    case networkFrameworkUnavailable
+    case noOpenPort(startPort: Int)
+    case invalidPort(Int)
+    case portUnavailable(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .foundationModelsUnavailable:
+            return "FoundationModels framework is not available in this environment."
+        case .networkFrameworkUnavailable:
+            return "Network framework is not available in this environment."
+        case .noOpenPort(let startPort):
+            return "No open localhost port found from \(startPort)."
+        case .invalidPort(let port):
+            return "Invalid port: \(port). Use a value between 1 and 65535."
+        case .portUnavailable(let port):
+            return "Port \(port) is already in use on localhost."
+        }
+    }
+}
+
+func findAvailablePort(preferredPort: Int?, startPort: Int) throws -> Int {
+    if let preferredPort {
+        guard (1...65535).contains(preferredPort) else {
+            throw FoundationModelCLIError.invalidPort(preferredPort)
+        }
+        if isPortAvailable(preferredPort) {
+            return preferredPort
+        }
+        throw FoundationModelCLIError.portUnavailable(preferredPort)
+    }
+
+    for port in startPort...65535 where isPortAvailable(port) {
+        return port
+    }
+    throw FoundationModelCLIError.noOpenPort(startPort: startPort)
+}
+
+func generateResponse(
+    inputPrompt: String,
+    systemPrompt: String,
+    temperature: Double,
+    sampling: SamplingStrategy,
+    debug: Bool
+) async throws -> String {
+    #if canImport(FoundationModels)
+    let model = SystemLanguageModel.default
+
+    if debug {
+        print("Debug: Creating session...")
+    }
+
+    let session = LanguageModelSession(model: model, instructions: systemPrompt)
+
+    if debug {
+        print("Debug: Generating response...")
+    }
+
+    let samplingMode: GenerationOptions.SamplingMode = sampling == .greedy
+        ? .greedy
+        : .random(probabilityThreshold: 1.0, seed: nil)
+
+    let options = GenerationOptions(
+        sampling: samplingMode,
+        temperature: temperature
+    )
+
+    let response = try await session.respond(to: inputPrompt, options: options)
+    return response.content
+    #else
+    throw FoundationModelCLIError.foundationModelsUnavailable
+    #endif
+}
+
+func isPortAvailable(_ port: Int) -> Bool {
+    let fd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+    guard fd >= 0 else { return false }
+    defer { _ = close(fd) }
+
+    var address = sockaddr_in()
+#if canImport(Darwin)
+    address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+#endif
+    address.sin_family = sa_family_t(AF_INET)
+    address.sin_port = in_port_t(UInt16(port)).bigEndian
+    address.sin_addr = in_addr(s_addr: inet_addr("127.0.0.1"))
+
+    let bindResult = withUnsafePointer(to: &address) { pointer in
+        pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { socketAddress in
+            bind(fd, socketAddress, socklen_t(MemoryLayout<sockaddr_in>.size))
+        }
+    }
+
+    return bindResult == 0
+}
+
+#if canImport(Network)
+struct OpenAICompatibleServer {
+    let port: Int
+    let defaultSystemPrompt: String
+    let debug: Bool
+
+    func start() async throws {
+        guard let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
+            throw FoundationModelCLIError.invalidPort(port)
+        }
+
+        let listener = try NWListener(using: .tcp, on: nwPort)
+        listener.newConnectionHandler = { connection in
+            connection.start(queue: .global())
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 1_048_576) { data, _, _, _ in
+                Task {
+                    await handle(connection: connection, data: data)
+                }
+            }
+        }
+        listener.start(queue: .global())
+
+        print("OpenAI-compatible endpoint listening on http://127.0.0.1:\(port)/v1/chat/completions")
+        dispatchMain()
+    }
+
+    private func handle(connection: NWConnection, data: Data?) async {
+        defer { connection.cancel() }
+
+        guard
+            let data,
+            let request = String(data: data, encoding: .utf8),
+            let requestLine = request.components(separatedBy: "\r\n").first
+        else {
+            send(connection: connection, statusCode: 400, body: #"{"error":"Invalid request"}"#)
+            return
+        }
+
+        let parts = requestLine.split(separator: " ")
+        guard parts.count >= 2, parts[0] == "POST", parts[1] == "/v1/chat/completions" else {
+            send(connection: connection, statusCode: 404, body: #"{"error":"Not found"}"#)
+            return
+        }
+
+        guard let bodyRange = request.range(of: "\r\n\r\n") else {
+            send(connection: connection, statusCode: 400, body: #"{"error":"Missing request body"}"#)
+            return
+        }
+
+        let body = String(request[bodyRange.upperBound...])
+        guard let bodyData = body.data(using: .utf8) else {
+            send(connection: connection, statusCode: 400, body: #"{"error":"Invalid body encoding"}"#)
+            return
+        }
+
+        do {
+            let completionRequest = try JSONDecoder().decode(OpenAIChatCompletionsRequest.self, from: bodyData)
+            if completionRequest.stream == true {
+                send(connection: connection, statusCode: 400, body: #"{"error":"stream=true is not supported"}"#)
+                return
+            }
+
+            let systemPrompt = completionRequest.messages.first { $0.role == "system" }?.content ?? defaultSystemPrompt
+            let userPrompt = completionRequest.messages
+                .filter { $0.role == "user" }
+                .map(\.content)
+                .joined(separator: "\n")
+            guard !userPrompt.isEmpty else {
+                send(connection: connection, statusCode: 400, body: #"{"error":"No user message found"}"#)
+                return
+            }
+
+            let text = try await generateResponse(
+                inputPrompt: userPrompt,
+                systemPrompt: systemPrompt,
+                temperature: completionRequest.temperature ?? 0.0,
+                sampling: .sampling,
+                debug: debug
+            )
+
+            let response = OpenAIChatCompletionsResponse(
+                id: "chatcmpl-\(UUID().uuidString)",
+                created: Int(Date().timeIntervalSince1970),
+                model: completionRequest.model ?? "foundation-model",
+                choices: [
+                    .init(
+                        index: 0,
+                        message: .init(role: "assistant", content: text),
+                        finishReason: "stop"
+                    )
+                ]
+            )
+            let responseData = try JSONEncoder().encode(response)
+            if let responseBody = String(data: responseData, encoding: .utf8) {
+                send(connection: connection, statusCode: 200, body: responseBody)
+            } else {
+                send(connection: connection, statusCode: 500, body: #"{"error":"Failed to encode response"}"#)
+            }
+        } catch {
+            send(
+                connection: connection,
+                statusCode: 500,
+                body: #"{"error":"\#(error.localizedDescription.replacingOccurrences(of: "\"", with: "'"))"}"#
+            )
+        }
+    }
+
+    private func send(connection: NWConnection, statusCode: Int, body: String) {
+        let statusText = statusCode == 200 ? "OK" : "Error"
+        let response = """
+        HTTP/1.1 \(statusCode) \(statusText)\r
+        Content-Type: application/json\r
+        Content-Length: \(body.utf8.count)\r
+        Connection: close\r
+        \r
+        \(body)
+        """
+        let data = Data(response.utf8)
+        connection.send(content: data, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
+    }
+}
+#else
+struct OpenAICompatibleServer {
+    let port: Int
+    let defaultSystemPrompt: String
+    let debug: Bool
+
+    func start() async throws {
+        throw FoundationModelCLIError.networkFrameworkUnavailable
+    }
+}
+#endif
+
+struct OpenAIChatCompletionsRequest: Decodable {
+    let model: String?
+    let messages: [OpenAIChatMessage]
+    let temperature: Double?
+    let stream: Bool?
+}
+
+struct OpenAIChatMessage: Codable {
+    let role: String
+    let content: String
+}
+
+struct OpenAIChatCompletionsResponse: Encodable {
+    let id: String
+    let object: String = "chat.completion"
+    let created: Int
+    let model: String
+    let choices: [OpenAIChatChoice]
+}
+
+struct OpenAIChatChoice: Encodable {
+    let index: Int
+    let message: OpenAIChatMessage
+    let finishReason: String
+
+    enum CodingKeys: String, CodingKey {
+        case index
+        case message
+        case finishReason = "finish_reason"
+    }
 }
 
 struct StandardError: TextOutputStream {

@@ -27,6 +27,8 @@ We will create a specific Swift Package Executable.
   - `--system-prompt`, `-s`: Custom instructions for the model (default: empty).
   - `--temperature`, `-t`: Controls randomness (0.0 to 1.0). Lower values are more deterministic. (default: 0.0)
   - `--sampling`, `-m`: Sampling strategy. Values: `greedy` (deterministic), `sampling` (randomized). (default: `greedy`)
+  - `--openai-api`, `-o`: OpenAI API互換エンドポイントを起動。
+  - `--openai-api-port`, `-p`: OpenAI API互換エンドポイントのポート番号（未指定時は`localhost:4000`から空きポートを動的選択）。
   - `--debug`: Enable verbose logging.
   - `--version`: Show specific version.
 - **Logic**:
