@@ -58,9 +58,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
                 defaultSystemPrompt: systemPrompt,
                 debug: debug
             )
-            try await MainActor.run {
-                try server.start()
-            }
+            try await server.start()
             return
         }
 
@@ -228,8 +226,7 @@ struct OpenAICompatibleServer {
     let defaultSystemPrompt: String
     let debug: Bool
 
-    @MainActor
-    func start() throws {
+    func start() async throws {
         guard let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
             throw FoundationModelCLIError.invalidPort(port)
         }
@@ -250,10 +247,27 @@ struct OpenAICompatibleServer {
                 }
             }
         }
-        listener.start(queue: .main)
+        listener.start(queue: .global())
 
         print("OpenAI-compatible endpoint listening on http://127.0.0.1:\(port)/v1/chat/completions")
-        RunLoop.main.run()
+
+        let signals = AsyncStream<Void> { continuation in
+            signal(SIGINT, SIG_IGN)
+            signal(SIGTERM, SIG_IGN)
+            let sigintSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
+            let sigtermSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .global())
+            sigintSource.setEventHandler { continuation.finish() }
+            sigtermSource.setEventHandler { continuation.finish() }
+            sigintSource.resume()
+            sigtermSource.resume()
+            continuation.onTermination = { _ in
+                sigintSource.cancel()
+                sigtermSource.cancel()
+            }
+        }
+        for await _ in signals {}
+
+        withExtendedLifetime(listener) {}
     }
 
     private func handle(connection: NWConnection, data: Data?) async {
@@ -382,8 +396,7 @@ struct OpenAICompatibleServer {
     let defaultSystemPrompt: String
     let debug: Bool
 
-    @MainActor
-    func start() throws {
+    func start() async throws {
         throw FoundationModelCLIError.networkFrameworkUnavailable
     }
 }
