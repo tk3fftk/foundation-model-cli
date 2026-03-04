@@ -5,8 +5,8 @@ This plan outlines the steps to create a Command Line Interface (CLI) that utili
 ## Hotfix Plan (OpenAI API SIGTRAP)
 
 1. **Reproduce**: Confirm `fm -o` exits immediately with SIGTRAP because `dispatchMain()` runs off the main thread.
-2. **Fix**: Start the listener on the main queue, execute on `@MainActor`, and block with `RunLoop.main.run()` to avoid `dispatchMain()`.
-3. **Verify**: Run `swift test` (port search tests) and launch the CLI; on environments without Network framework support, expect the explicit error message.
+2. **Fix**: Start the listener on the main queue, execute on `@MainActor`, and block on the main thread (prefer `dispatchMain()` under `@MainActor` to keep running until SIGTERM/Ctrl+C); fallback to `RunLoop.main.run()` only if needed for non-main contexts.
+3. **Verify**: Run `swift test` (port search tests), `swift build -c release`, and launch the CLI; ensure the OpenAI API mode keeps running until SIGTERM / Ctrl+C. On environments without Network framework support, expect the explicit error message.
 
 ## Proposed Changes
 
