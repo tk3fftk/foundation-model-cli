@@ -237,8 +237,8 @@ struct OpenAICompatibleServer {
             connection.receive(
                 minimumIncompleteLength: 1,
                 maximumLength: maxHTTPRequestSizeBytes
-            ) { data, _, isComplete, receiveError in
-                guard receiveError == nil, isComplete else {
+            ) { data, _, _, receiveError in
+                guard receiveError == nil else {
                     connection.cancel()
                     return
                 }
@@ -250,12 +250,27 @@ struct OpenAICompatibleServer {
         listener.start(queue: .global())
 
         print("OpenAI-compatible endpoint listening on http://127.0.0.1:\(port)/v1/chat/completions")
-        dispatchMain()
+
+        let signals = AsyncStream<Void> { continuation in
+            signal(SIGINT, SIG_IGN)
+            signal(SIGTERM, SIG_IGN)
+            let sigintSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
+            let sigtermSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .global())
+            sigintSource.setEventHandler { continuation.finish() }
+            sigtermSource.setEventHandler { continuation.finish() }
+            sigintSource.resume()
+            sigtermSource.resume()
+            continuation.onTermination = { _ in
+                sigintSource.cancel()
+                sigtermSource.cancel()
+            }
+        }
+        for await _ in signals {}
+
+        withExtendedLifetime(listener) {}
     }
 
     private func handle(connection: NWConnection, data: Data?) async {
-        defer { connection.cancel() }
-
         guard
             let data,
             let request = String(data: data, encoding: .utf8),
