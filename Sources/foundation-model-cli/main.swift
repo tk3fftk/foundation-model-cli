@@ -58,7 +58,9 @@ struct FoundationModelCLI: AsyncParsableCommand {
                 defaultSystemPrompt: systemPrompt,
                 debug: debug
             )
-            try await server.start()
+            try await MainActor.run {
+                try server.start()
+            }
             return
         }
 
@@ -227,7 +229,7 @@ struct OpenAICompatibleServer {
     let debug: Bool
 
     @MainActor
-    func start() async throws {
+    func start() throws {
         guard let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
             throw FoundationModelCLIError.invalidPort(port)
         }
@@ -381,7 +383,7 @@ struct OpenAICompatibleServer {
     let debug: Bool
 
     @MainActor
-    func start() async throws {
+    func start() throws {
         throw FoundationModelCLIError.networkFrameworkUnavailable
     }
 }
