@@ -155,6 +155,7 @@ func findAvailablePort(preferredPort: Int?, startPort: Int) throws -> Int {
     throw FoundationModelCLIError.noOpenPort(startPort: startPort)
 }
 
+@available(macOS 26.0, *)
 func generateResponse(
     inputPrompt: String,
     systemPrompt: String,
@@ -192,7 +193,11 @@ func generateResponse(
 }
 
 func isPortAvailable(_ port: Int) -> Bool {
+    #if canImport(Darwin)
+    let fd = socket(AF_INET, SOCK_STREAM, 0)
+    #else
     let fd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+    #endif
     guard fd >= 0 else { return false }
     defer { _ = close(fd) }
 
@@ -214,6 +219,7 @@ func isPortAvailable(_ port: Int) -> Bool {
 }
 
 #if canImport(Network)
+@available(macOS 26.0, *)
 struct OpenAICompatibleServer {
     private let maxHTTPRequestSizeBytes = 1_048_576
     let port: Int
