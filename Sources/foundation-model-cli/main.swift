@@ -286,13 +286,17 @@ struct OpenAICompatibleServer {
         }
 
         let parts = requestLine.split(separator: " ")
-        let endpoint = connection.currentPath?.remoteEndpoint ?? connection.endpoint
+        let resolvedEndpoint = connection.currentPath?.remoteEndpoint ?? connection.endpoint
         let remoteEndpoint: String
-        switch endpoint {
+        switch resolvedEndpoint {
         case .hostPort(let host, let port):
             remoteEndpoint = "\(host):\(port.rawValue)"
+        case .service(let name, let type, let domain, _):
+            remoteEndpoint = "\(name).\(type).\(domain)"
+        case .unix(let path):
+            remoteEndpoint = path
         default:
-            remoteEndpoint = "\(endpoint)"
+            remoteEndpoint = "unknown:\(resolvedEndpoint)"
         }
         print(makeOpenAIAccessLog(remoteEndpoint: remoteEndpoint, requestLine: requestLine))
         guard parts.count >= 2, parts[0] == "POST", parts[1] == "/v1/chat/completions" else {
