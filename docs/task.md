@@ -11,3 +11,4 @@
     - [x] Verify sampling argument effect
 - [x] CI
     - [x] Add GitHub Actions workflow for Swift lint and build
+    - [x] Use latest macOS runner in workflow

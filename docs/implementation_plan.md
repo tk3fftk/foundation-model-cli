@@ -38,7 +38,7 @@ We will create a specific Swift Package Executable.
 ## CI (GitHub Actions)
 - Add `.github/workflows/swift-ci.yml`.
 - Run on `push` to `main` and `pull_request`.
-- Use `macos-15` runner, install `swiftlint`, then run:
+- Use `macos-latest` runner, install `swiftlint`, then run:
   - `swiftlint lint`
   - `swift build -c release`
 
