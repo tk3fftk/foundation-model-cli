@@ -43,6 +43,12 @@ We will create a specific Swift Package Executable.
   - `swiftlint lint`
   - `swift build -c release`
 
+## Lint Hotfix Plan (run 22658023020)
+- Rename `ReadLine()` to lowerCamelCase (`readStdin()`).
+- Split overlong ternary expression for `samplingMode`.
+- Remove trailing whitespaces in `main.swift`.
+- Remove trailing commas in `Package.swift`.
+
 ## Verification Plan
 
 ### Automated Tests

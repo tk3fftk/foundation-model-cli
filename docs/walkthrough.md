@@ -81,3 +81,9 @@ echo "What is the capital of France?" | .build/release/fm
 - It runs:
   - `swiftlint lint`
   - `swift build -c release`
+
+## Lint Fix Notes (run 22658023020)
+- Renamed stdin helper from `ReadLine()` to `readStdin()` to satisfy `identifier_name`.
+- Reformatted a long ternary assignment for `samplingMode` to satisfy `line_length`.
+- Removed trailing whitespace lines in `main.swift`.
+- Removed trailing commas in `Package.swift`.

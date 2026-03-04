@@ -33,7 +33,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
             inputPrompt = promptArgument
         } else {
             // Read from stdin if no argument provided
-            guard let stdinData = ReadLine() else {
+            guard let stdinData = readStdin() else {
                 print("Error: No input provided via argument or stdin.", to: &localStandardError)
                 throw ExitCode.validationFailure
             }
@@ -50,20 +50,22 @@ struct FoundationModelCLI: AsyncParsableCommand {
 
         do {
             let model = SystemLanguageModel.default
-            
+
             if debug {
                 print("Debug: Creating session...")
             }
-            
+
             let session = LanguageModelSession(model: model, instructions: systemPrompt)
-            
+
             if debug {
                 print("Debug: Generating response...")
             }
 
             // Map CLI sampling argument to API SamplingMode
             // Note: Using a top-p threshold of 1.0 for 'sampling' to mimic standard sampling behavior.
-            let samplingMode: GenerationOptions.SamplingMode = sampling == .greedy ? .greedy : .random(probabilityThreshold: 1.0, seed: nil)
+            let samplingMode: GenerationOptions.SamplingMode = sampling == .greedy
+                ? .greedy
+                : .random(probabilityThreshold: 1.0, seed: nil)
 
             let options = GenerationOptions(
                 sampling: samplingMode,
@@ -83,7 +85,7 @@ struct FoundationModelCLI: AsyncParsableCommand {
     }
 
     // Helper to read all stdin
-    private func ReadLine() -> String? {
+    private func readStdin() -> String? {
         var input = ""
         while let line = readLine(strippingNewline: false) {
             input += line
