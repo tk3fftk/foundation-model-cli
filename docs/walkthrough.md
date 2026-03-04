@@ -9,6 +9,7 @@ We have successfully implemented `fm`, a CLI tool that interfaces with Apple's F
 - **Sampling Strategy**: Choose between deterministic (`greedy`) or randomized (`sampling`) via `--sampling` or `-m`. Default is `greedy`.
 - **OpenAI API互換エンドポイント**: `--openai-api` / `-o` で `POST /v1/chat/completions` を提供。
 - **動的ポート選択**: `--openai-api` 単独指定時は `localhost:4000` から空きポートを自動選択。`--openai-api-port` / `-p` で明示指定も可能。
+- **アクセスログ**: OpenAI APIモードでは受信HTTPリクエストごとにタイムスタンプ付きアクセスログを標準出力へ出力。
 - **Debug Mode**: Verbose logging with `--debug`.
 - **Standard Options**: `--help` and `--version`.
 

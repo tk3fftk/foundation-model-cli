@@ -8,6 +8,19 @@ import Glibc
 #endif
 
 final class OpenAIAPIOptionTests: XCTestCase {
+    func testMakeOpenAIAccessLogIncludesTimestampRemoteAndRequestLine() {
+        let date = Date(timeIntervalSince1970: 0)
+        let log = makeOpenAIAccessLog(
+            remoteEndpoint: "127.0.0.1:12345",
+            requestLine: "POST /v1/chat/completions HTTP/1.1",
+            date: date
+        )
+        XCTAssertEqual(
+            log,
+            #"[1970-01-01T00:00:00Z] 127.0.0.1:12345 "POST /v1/chat/completions HTTP/1.1""#
+        )
+    }
+
     func testFindAvailablePortSkipsOccupiedPort() throws {
         let socketFD = makeBoundSocket(port: 4000)
         defer { _ = close(socketFD) }

@@ -8,6 +8,12 @@ This plan outlines the steps to create a Command Line Interface (CLI) that utili
 2. **Fix**: Start the listener on the main queue, execute on `@MainActor`, and block on the main thread using `RunLoop.main.run()` so the process stays alive until SIGTERM/Ctrl+C without trapping.
 3. **Verify**: Run `swift test` (port search tests), `swift build -c release`, and launch the CLI; ensure the OpenAI API mode keeps running until SIGTERM / Ctrl+C. On environments without Network framework support, expect the explicit error message.
 
+## Incremental Plan (OpenAI API Access Log)
+
+1. Add a small access-log formatter helper to keep logging output consistent.
+2. Print one access log line for each accepted HTTP request in OpenAI API mode.
+3. Add a focused unit test for the formatter and run `swift test`.
+
 ## Proposed Changes
 
 ### Project Structure
