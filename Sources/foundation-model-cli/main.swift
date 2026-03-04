@@ -219,7 +219,7 @@ func isPortAvailable(_ port: Int) -> Bool {
 }
 
 func makeOpenAIAccessLog(remoteEndpoint: String, requestLine: String, date: Date = Date()) -> String {
-    let timestamp = ISO8601DateFormatter().string(from: date)
+    let timestamp = date.formatted(.iso8601)
     return "[\(timestamp)] \(remoteEndpoint) \"\(requestLine)\""
 }
 
@@ -286,8 +286,14 @@ struct OpenAICompatibleServer {
         }
 
         let parts = requestLine.split(separator: " ")
-        let remoteEndpoint = connection.currentPath?.remoteEndpoint.debugDescription
-            ?? connection.endpoint.debugDescription
+        let endpoint = connection.currentPath?.remoteEndpoint ?? connection.endpoint
+        let remoteEndpoint: String
+        switch endpoint {
+        case .hostPort(let host, let port):
+            remoteEndpoint = "\(host):\(port.rawValue)"
+        default:
+            remoteEndpoint = "\(endpoint)"
+        }
         print(makeOpenAIAccessLog(remoteEndpoint: remoteEndpoint, requestLine: requestLine))
         guard parts.count >= 2, parts[0] == "POST", parts[1] == "/v1/chat/completions" else {
             send(connection: connection, statusCode: 404, body: #"{"error":"Not found"}"#)
