@@ -11,4 +11,5 @@
     - [x] Verify sampling argument effect
 - [x] CI
     - [x] Add GitHub Actions workflow for Swift lint and build
+    - [x] Pin `actions/checkout` to latest commit hash
     - [x] Use latest macOS runner in workflow
