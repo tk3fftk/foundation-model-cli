@@ -237,8 +237,8 @@ struct OpenAICompatibleServer {
             connection.receive(
                 minimumIncompleteLength: 1,
                 maximumLength: maxHTTPRequestSizeBytes
-            ) { data, _, isComplete, receiveError in
-                guard receiveError == nil, isComplete else {
+            ) { data, _, _, receiveError in
+                guard receiveError == nil else {
                     connection.cancel()
                     return
                 }
@@ -271,8 +271,6 @@ struct OpenAICompatibleServer {
     }
 
     private func handle(connection: NWConnection, data: Data?) async {
-        defer { connection.cancel() }
-
         guard
             let data,
             let request = String(data: data, encoding: .utf8),
