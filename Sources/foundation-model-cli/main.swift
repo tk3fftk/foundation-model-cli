@@ -253,7 +253,7 @@ struct OpenAICompatibleServer {
         listener.start(queue: .main)
 
         print("OpenAI-compatible endpoint listening on http://127.0.0.1:\(port)/v1/chat/completions")
-        RunLoop.main.run()
+        dispatchMain()
     }
 
     private func handle(connection: NWConnection, data: Data?) async {
