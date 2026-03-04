@@ -76,7 +76,7 @@ echo "What is the capital of France?" | .build/release/fm
 ## CI
 - Added GitHub Actions workflow: `.github/workflows/swift-ci.yml`
 - The workflow executes on `push` (main) and `pull_request`.
-- Runner: `macos-15`
+- Runner: `macos-26`
 - Uses commit-hash pinned `actions/checkout` (`v6.0.2`).
 - It runs:
   - `swiftlint lint`

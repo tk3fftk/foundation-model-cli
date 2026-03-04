@@ -39,7 +39,7 @@ We will create a specific Swift Package Executable.
 - Add `.github/workflows/swift-ci.yml`.
 - Pin `actions/checkout` to commit `de0fac2e4500dabe0009e67214ff5f5447ce83dd` (`v6.0.2`).
 - Run on `push` to `main` and `pull_request`.
-- Use `macos-15` runner, install `swiftlint`, then run:
+- Use `macos-26` runner, install `swiftlint`, then run:
   - `swiftlint lint`
   - `swift build -c release`
 
