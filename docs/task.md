@@ -6,9 +6,13 @@
 - [/] Implementation
     - [x] Add CLI arguments for temperature and sampling
     - [x] Integrate GenerationOptions into SystemLanguageModel call
+    - [x] Add OpenAI API互換エンドポイント起動オプション（`--openai-api` / `-o`）
+    - [x] Add OpenAI API互換エンドポイントポート指定オプション（`--openai-api-port` / `-p`）
+    - [x] Implement dynamic port selection from localhost:4000 when port is omitted
 - [x] Verification
     - [x] Verify temperature argument effect
     - [x] Verify sampling argument effect
+    - [x] Verify OpenAI API option parsing and dynamic port selection logic via tests
 - [x] CI
     - [x] Add GitHub Actions workflow for Swift lint and build
     - [x] Pin `actions/checkout` to `v6.0.2` commit hash
