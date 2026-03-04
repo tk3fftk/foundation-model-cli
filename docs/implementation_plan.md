@@ -2,11 +2,11 @@
 
 This plan outlines the steps to create a Command Line Interface (CLI) that utilizes Apple's `SystemLanguageModel` (part of the Foundation Models / Apple Intelligence framework) to generate text based on user input.
 
-## User Review Required
+## Hotfix Plan (OpenAI API SIGTRAP)
 
-> [!IMPORTANT]
-> **Prerequisites**: This tool relies on the `FoundationModels` framework (or equivalent Apple Intelligence API) which is available on **macOS 15+ (Sequoia)** with **Xcode 16+**.
-> The API name `SystemLanguageModel` is based on recent developer documentation for Apple Intelligence. If this framework is not found, we may need to fall back to `CoreML` or verify the exact framework name in your environment.
+1. **Reproduce**: Confirm `fm -o` exits immediately with SIGTRAP because `dispatchMain()` runs off the main thread.
+2. **Fix**: Start the listener on the main queue, execute on `@MainActor`, and block on the main thread using `RunLoop.main.run()` so the process stays alive until SIGTERM/Ctrl+C without trapping.
+3. **Verify**: Run `swift test` (port search tests), `swift build -c release`, and launch the CLI; ensure the OpenAI API mode keeps running until SIGTERM / Ctrl+C. On environments without Network framework support, expect the explicit error message.
 
 ## Proposed Changes
 

@@ -1,5 +1,13 @@
 # Task List for Apple Foundation Model CLI
 
+- [x] Hotfix: OpenAI API trace trap
+    - [x] Replace `dispatchMain` usage with `RunLoop.main.run()` on `@MainActor`
+    - [x] Ensure listener runs on main queue
+    - [x] Run `swift test` and manual launch check (network framework availability noted)
+    - [x] Update /docs with hotfix details
+- [x] Hotfix: OpenAI API server should keep running until SIGTERM/Ctrl+C
+    - [x] Keep main thread alive under `@MainActor` (use `dispatchMain` safely)
+    - [x] Verify release binary stays up (`fm -o`)
 - [x] Research & Planning
     - [x] Research GenerationOptions API (temperature, sampling)
     - [x] Update Implementation Plan
