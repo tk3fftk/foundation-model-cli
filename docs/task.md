@@ -9,3 +9,7 @@
 - [x] Verification
     - [x] Verify temperature argument effect
     - [x] Verify sampling argument effect
+- [x] CI
+    - [x] Add GitHub Actions workflow for Swift lint and build
+    - [x] Pin `actions/checkout` to `v6.0.2` commit hash
+    - [x] Use fixed `macos-26` runner label in workflow

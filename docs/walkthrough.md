@@ -72,3 +72,12 @@ echo "What is the capital of France?" | .build/release/fm
 ## Notes
 - **Requirements**: macOS 15+ (Sequoia) / macOS 26.0 (Future beta) with Apple Intelligence enabled.
 - **Troubleshooting**: If you see `assetsUnavailable` error, ensure Apple Intelligence processing is finished on your device.
+
+## CI
+- Added GitHub Actions workflow: `.github/workflows/swift-ci.yml`
+- The workflow executes on `push` (main) and `pull_request`.
+- Runner: `macos-26`
+- Uses commit-hash pinned `actions/checkout` (`v6.0.2`).
+- It runs:
+  - `swiftlint lint`
+  - `swift build -c release`
