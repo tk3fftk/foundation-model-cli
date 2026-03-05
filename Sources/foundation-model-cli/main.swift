@@ -20,8 +20,10 @@ struct FoundationModelCLIEntryPoint {
             await FoundationModelCLI.main()
         } else {
             var stderr = StandardError()
+            let version = ProcessInfo.processInfo.operatingSystemVersion
+            let versionString = "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
             print("Error: macOS 26.0 (Tahoe) or later is required to use Foundation Models.", to: &stderr)
-            print("Current macOS version is not supported.", to: &stderr)
+            print("Current macOS version: \(versionString)", to: &stderr)
             exit(1)
         }
     }
