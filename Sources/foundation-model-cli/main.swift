@@ -14,6 +14,21 @@ import Glibc
 #endif
 
 @main
+struct FoundationModelCLIEntryPoint {
+    static func main() async {
+        if #available(macOS 26.0, *) {
+            await FoundationModelCLI.main()
+        } else {
+            var stderr = StandardError()
+            let version = ProcessInfo.processInfo.operatingSystemVersion
+            let versionString = "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
+            print("Error: macOS 26.0 (Tahoe) or later is required to use Foundation Models.", to: &stderr)
+            print("Current macOS version: \(versionString)", to: &stderr)
+            exit(1)
+        }
+    }
+}
+
 @available(macOS 26.0, *)
 struct FoundationModelCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(

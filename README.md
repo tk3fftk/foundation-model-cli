@@ -4,9 +4,9 @@ A command-line interface for Apple's Foundation Models (Apple Intelligence), all
 
 ## Requirements
 
-- **macOS 15+ (Sequoia)** or newer (specifically versions supporting Apple Intelligence, e.g., macOS 26.0).
+- **macOS 26.0 (Tahoe)** or later - Foundation Models framework is only available on macOS 26.0+. Running on earlier versions will display an error and exit.
 - **Apple Silicon** Mac with Apple Intelligence enabled.
-- **Xcode 16+** (for building).
+- **Xcode 26+** (for building).
 
 ## Installation
 
