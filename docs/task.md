@@ -30,3 +30,7 @@
     - [x] Fix line length violation in `main.swift`
     - [x] Remove trailing whitespace in `main.swift`
     - [x] Remove trailing comma warnings in `Package.swift`
+- [/] OpenAI API access log
+    - [x] Add request access log output in OpenAI API mode
+    - [x] Add focused unit test for access-log formatter
+    - [ ] Verify runtime output on a Network.framework-enabled environment

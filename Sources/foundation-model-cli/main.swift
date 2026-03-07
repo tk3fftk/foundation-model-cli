@@ -233,6 +233,11 @@ func isPortAvailable(_ port: Int) -> Bool {
     return bindResult == 0
 }
 
+func makeOpenAIAccessLog(remoteEndpoint: String, requestLine: String, date: Date = Date()) -> String {
+    let timestamp = date.formatted(.iso8601)
+    return "[\(timestamp)] \(remoteEndpoint) \"\(requestLine)\""
+}
+
 #if canImport(Network)
 @available(macOS 26.0, *)
 struct OpenAICompatibleServer {
@@ -296,6 +301,19 @@ struct OpenAICompatibleServer {
         }
 
         let parts = requestLine.split(separator: " ")
+        let resolvedEndpoint = connection.currentPath?.remoteEndpoint ?? connection.endpoint
+        let remoteEndpoint: String
+        switch resolvedEndpoint {
+        case .hostPort(let host, let port):
+            remoteEndpoint = "\(host):\(port.rawValue)"
+        case .service(let name, let type, let domain, _):
+            remoteEndpoint = "\(name).\(type).\(domain)"
+        case .unix(let path):
+            remoteEndpoint = path
+        default:
+            remoteEndpoint = "unknown:\(resolvedEndpoint)"
+        }
+        print(makeOpenAIAccessLog(remoteEndpoint: remoteEndpoint, requestLine: requestLine))
         guard parts.count >= 2, parts[0] == "POST", parts[1] == "/v1/chat/completions" else {
             send(connection: connection, statusCode: 404, body: #"{"error":"Not found"}"#)
             return
